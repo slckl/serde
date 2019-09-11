@@ -2002,6 +2002,64 @@ fn test_flatten_unsupported_type() {
 }
 
 #[test]
+fn test_flatten_default_extrinsically_tagged_enum() {
+    #[derive(Debug, PartialEq, Serialize, Deserialize)]
+    enum TestEnum {
+        A(u32),
+        B(u32)
+    }
+
+    impl Default for TestEnum {
+        fn default() -> TestEnum {
+            TestEnum::B(1)
+        }
+    }
+
+    #[derive(Debug, PartialEq, Serialize, Deserialize)]
+    struct TestStruct {
+        filler: u32,
+        #[serde(flatten, default)]
+        flattened_with_default: TestEnum,
+    }
+
+    // test flatten externally tagged enum
+    assert_de_tokens(
+        &TestStruct {
+            filler: 1,
+            flattened_with_default: TestEnum::B(1)
+        },
+        &[
+            Token::Struct { name: "TestStruct", len: 2 },
+            Token::Str("filler"),
+            Token::U32(1),
+//            Token::Str("flattened_with_default"),
+//            Token::Enum { name: "TestEnum" },
+            Token::Str("B"),
+            Token::U32(1),
+            Token::StructEnd
+        ]
+    );
+    // test flatten externally tagged enum with default
+    // fixme this is the case we need to fix, I think
+    assert_de_tokens(
+        &TestStruct {
+            filler: 1,
+            flattened_with_default: TestEnum::B(1)
+        },
+        &[
+            Token::Struct { name: "TestStruct", len: 2 },
+            Token::Str("filler"),
+            Token::U32(1),
+//            Token::Str("flattened_with_default"),
+//            Token::Enum { name: "TestEnum" },
+//            Token::Str("B"),
+//            Token::U32(1),
+            Token::StructEnd
+        ]
+    );
+}
+
+#[test]
 fn test_non_string_keys() {
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     struct TestStruct {
